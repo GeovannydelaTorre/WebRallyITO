@@ -546,6 +546,7 @@
                     console.error('Error cargando pregunta:', error);
                     alert('Error al cargar la pregunta');
                 });
+            console.log(typeof questionIndex);
         }
 
         function showQuestionScreen() {
@@ -566,6 +567,7 @@
             });
             
             selectedOption = null;
+            
         }
 
         function selectOption(optionElement, index) {
