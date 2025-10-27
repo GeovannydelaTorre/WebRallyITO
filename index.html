@@ -544,9 +544,8 @@
                     }
                 })
                 .catch(error => {
-                    alert(type(questionIndex));
                     console.error('Error cargando pregunta:', error);
-                    alert('Error al cargar la pregunta funtion selectQuestion');
+                    alert('Error al cargar la pregunta funtion selectQuestion '+type(questionIndex));
                 });
             
         }
