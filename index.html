@@ -539,14 +539,14 @@
                         currentQuestion = questions[randomIndex];
                         showQuestionScreen();
                     } else {
-                        alert(type(questionIndex));
                         alert('No hay preguntas disponibles para esta estación');
                         
                     }
                 })
                 .catch(error => {
+                    alert(type(questionIndex));
                     console.error('Error cargando pregunta:', error);
-                    alert('Error al cargar la pregunta');
+                    alert('Error al cargar la pregunta funtion selectQuestion');
                 });
             
         }
