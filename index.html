@@ -539,8 +539,9 @@
                         currentQuestion = questions[randomIndex];
                         showQuestionScreen();
                     } else {
-                        alert('No hay preguntas disponibles para esta estación');
                         alert(type(questionIndex));
+                        alert('No hay preguntas disponibles para esta estación');
+                        
                     }
                 })
                 .catch(error => {
