@@ -540,13 +540,14 @@
                         showQuestionScreen();
                     } else {
                         alert('No hay preguntas disponibles para esta estación');
+                        alert(type(questionIndex));
                     }
                 })
                 .catch(error => {
                     console.error('Error cargando pregunta:', error);
                     alert('Error al cargar la pregunta');
                 });
-            console.log(type(questionIndex));
+            
         }
 
         function showQuestionScreen() {
