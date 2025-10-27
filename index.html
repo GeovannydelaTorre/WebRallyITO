@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rally Académico</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <!-- Firebase App (el núcleo de Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <!-- Firebase Firestore -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <style>
+        :root {
+            --primary: #3498db;
+            --secondary: #2ecc71;
+            --accent: #e74c3c;
+            --dark: #2c3e50;
+            --light: #ecf0f1;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: var(--dark);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            flex: 1;
+        }
+        
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+            margin-bottom: 20px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            display: inline-block;
+            text-align: center;
+            text-decoration: none;
+        }
+        
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-success {
+            background-color: var(--secondary);
+        }
+        
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+        
+        .btn-danger {
+            background-color: var(--accent);
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        .cards-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        .card-option {
+            width: 150px;
+            height: 200px;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+        
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        
+        .card-option.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+        
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .card-front {
+            background-color: var(--primary);
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .card-back {
+            background-color: white;
+            color: var(--dark);
+            transform: rotateY(180deg);
+            font-size: 18px;
+        }
+        
+        .options-container {
+            display: grid;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .option {
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .option:hover {
+            border-color: var(--primary);
+            background-color: #f8f9fa;
+        }
+        
+        .option.selected {
+            border-color: var(--secondary);
+            background-color: rgba(46, 204, 113, 0.1);
+        }
+        
+        .timer {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            color: var(--dark);
+        }
+        
+        .qr-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        .qr-item {
+            text-align: center;
+        }
+        
+        .qr-code {
+            margin: 10px 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .admin-panel {
+            background-color: #f8f9fa;
+            border-left: 4px solid var(--primary);
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .admin-login {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        .welcome-screen {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .welcome-screen h2 {
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+        
+        .welcome-screen p {
+            margin-bottom: 30px;
+            font-size: 18px;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 30px;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        
+        @media (max-width: 768px) {
+            .cards-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .card-option {
+                width: 100%;
+                max-width: 200px;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+            
+            .card {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Rally Académico</h1>
+        </header>
+
+        <!-- Pantalla de bienvenida -->
+        <div id="welcome-screen" class="card welcome-screen">
+            <h2>¡Bienvenido al Rally Académico!</h2>
+            <p>Para participar, escanea el código QR en una de las estaciones del rally.</p>
+            <p>Después de responder una pregunta, se te pedirá que ingreses tu número de equipo y clave.</p>
+            <div class="admin-access">
+                <h3>Acceso Administrador</h3>
+                <button id="admin-access-btn" class="btn">Acceder al Panel de Administración</button>
+            </div>
+        </div>
+
+        <!-- Pantalla de selección de pregunta (aparece al escanear QR) -->
+        <div id="question-selection" class="card hidden">
+            <h2>Estación <span id="station-number">1</span></h2>
+            <p>Selecciona una carta para revelar tu pregunta:</p>
+            <div class="cards-container" id="cards-container">
+                <!-- Las cartas se generarán dinámicamente -->
+            </div>
+            <div class="footer-note">
+                <p>Después de responder, se te pedirá que ingreses tu información de equipo.</p>
+            </div>
+        </div>
+
+        <!-- Pantalla de pregunta -->
+        <div id="question-screen" class="card hidden">
+            <h2>Pregunta - Estación <span id="question-station">1</span></h2>
+            <p id="question-text"></p>
+            <div class="options-container" id="options-container">
+                <!-- Las opciones se generarán dinámicamente -->
+            </div>
+            <button id="submit-answer" class="btn btn-success">Enviar Respuesta</button>
+        </div>
+
+        <!-- Pantalla de registro de equipo -->
+        <div id="team-registration" class="card hidden">
+            <h2>Registro de Equipo</h2>
+            <p>Por favor ingresa la información de tu equipo para registrar tu respuesta:</p>
+            <div class="form-group">
+                <label for="team-number">Número de Equipo</label>
+                <input type="number" id="team-number" min="1" placeholder="Ingresa tu número de equipo">
+            </div>
+            <div class="form-group">
+                <label for="team-key">Clave de Equipo</label>
+                <input type="password" id="team-key" placeholder="Ingresa tu clave de equipo">
+            </div>
+            <button id="register-team" class="btn">Registrar Respuesta</button>
+            <p id="registration-message" class="hidden" style="margin-top: 15px; padding: 10px; border-radius: 4px;"></p>
+        </div>
+
+        <!-- Pantalla de confirmación -->
+        <div id="confirmation-screen" class="card hidden">
+            <h2>¡Respuesta Registrada!</h2>
+            <p>Tu respuesta ha sido guardada correctamente.</p>
+            <p>Continúa a la siguiente estación.</p>
+            <button id="next-station" class="btn">Continuar</button>
+        </div>
+
+        <!-- Login de Administrador -->
+        <div id="admin-login" class="card admin-login hidden">
+            <h2>Acceso Administrador</h2>
+            <div class="form-group">
+                <label for="admin-password">Contraseña de Administrador</label>
+                <input type="password" id="admin-password" placeholder="Ingresa la contraseña">
+            </div>
+            <button id="admin-login-btn" class="btn">Acceder</button>
+            <button id="back-to-welcome" class="btn" style="margin-top: 10px; background-color: #7f8c8d;">Volver</button>
+            <p id="admin-login-message" class="hidden" style="margin-top: 15px; padding: 10px; border-radius: 4px;"></p>
+        </div>
+
+        <!-- Panel de Administración -->
+        <div id="admin-panel" class="card hidden">
+            <h2>Panel de Administración</h2>
+            
+            <div class="admin-panel">
+                <h3>Control del Rally</h3>
+                <button id="start-timer" class="btn">Iniciar Cronómetro</button>
+                <button id="reset-rally" class="btn btn-danger">Reiniciar Rally</button>
+                <button id="logout-admin" class="btn" style="background-color: #7f8c8d;">Cerrar Sesión</button>
+            </div>
+            
+            <div class="admin-panel">
+                <h3>Generador de Códigos QR</h3>
+                <p>Genera los códigos QR para cada estación:</p>
+                <div class="qr-container" id="qr-container">
+                    <!-- Los QR se generarán dinámicamente -->
+                </div>
+                <button id="generate-all-qr" class="btn">Generar Todos los QR</button>
+            </div>
+            
+            <div class="admin-panel">
+                <h3>Reporte de Resultados</h3>
+                <button id="view-results" class="btn">Ver Resultados</button>
+                <table id="results-table" class="hidden">
+                    <thead>
+                        <tr>
+                            <th>Equipo</th>
+                            <th>Puntuación</th>
+                            <th>Tiempo</th>
+                            <th>Estaciones Completadas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Los resultados se cargarán dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Rally Académico - Sistema de Competencia</p>
+    </div>
+
+    <script>
+        // Configuración de Firebase (REMPLAZA CON TU CONFIGURACIÓN)
+        const firebaseConfig = {
+            apiKey: "tu-api-key",
+            authDomain: "tu-proyecto.firebaseapp.com",
+            projectId: "tu-proyecto",
+            storageBucket: "tu-proyecto.appspot.com",
+            messagingSenderId: "tu-sender-id",
+            appId: "tu-app-id"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Variables globales
+        let currentTeam = null;
+        let currentStation = 1;
+        let currentQuestion = null;
+        let selectedOption = null;
+        let startTime = null;
+        let timerInterval = null;
+        let teamAnswers = {};
+        let adminAuthenticated = false;
+
+        // Referencias a elementos DOM
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const questionSelection = document.getElementById('question-selection');
+        const questionScreen = document.getElementById('question-screen');
+        const teamRegistration = document.getElementById('team-registration');
+        const confirmationScreen = document.getElementById('confirmation-screen');
+        const adminLogin = document.getElementById('admin-login');
+        const adminPanel = document.getElementById('admin-panel');
+        const stationNumber = document.getElementById('station-number');
+        const questionStation = document.getElementById('question-station');
+        const cardsContainer = document.getElementById('cards-container');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const submitAnswer = document.getElementById('submit-answer');
+        const teamNumberInput = document.getElementById('team-number');
+        const teamKeyInput = document.getElementById('team-key');
+        const registerTeam = document.getElementById('register-team');
+        const registrationMessage = document.getElementById('registration-message');
+        const nextStation = document.getElementById('next-station');
+        const adminAccessBtn = document.getElementById('admin-access-btn');
+        const adminPasswordInput = document.getElementById('admin-password');
+        const adminLoginBtn = document.getElementById('admin-login-btn');
+        const adminLoginMessage = document.getElementById('admin-login-message');
+        const backToWelcome = document.getElementById('back-to-welcome');
+        const startTimer = document.getElementById('start-timer');
+        const resetRally = document.getElementById('reset-rally');
+        const logoutAdmin = document.getElementById('logout-admin');
+        const generateAllQr = document.getElementById('generate-all-qr');
+        const qrContainer = document.getElementById('qr-container');
+        const viewResults = document.getElementById('view-results');
+        const resultsTable = document.getElementById('results-table');
+
+        // Event Listeners
+        submitAnswer.addEventListener('click', handleAnswerSubmission);
+        registerTeam.addEventListener('click', handleTeamRegistration);
+        nextStation.addEventListener('click', handleNextStation);
+        adminAccessBtn.addEventListener('click', showAdminLogin);
+        adminLoginBtn.addEventListener('click', handleAdminLogin);
+        backToWelcome.addEventListener('click', backToWelcomeScreen);
+        startTimer.addEventListener('click', startGlobalTimer);
+        resetRally.addEventListener('click', resetRallyData);
+        logoutAdmin.addEventListener('click', logoutAdminPanel);
+        generateAllQr.addEventListener('click', generateAllQRs);
+        viewResults.addEventListener('click', showResults);
+
+        // Funciones principales
+
+        // Verificar parámetros de URL al cargar la página
+        window.addEventListener('load', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const stationParam = urlParams.get('station');
+            
+            if (stationParam) {
+                currentStation = parseInt(stationParam);
+                if (currentStation >= 1 && currentStation <= 10) {
+                    showQuestionSelection();
+                } else {
+                    alert('Estación no válida. Debe ser entre 1 y 10.');
+                }
+            }
+        });
+
+        function showQuestionSelection() {
+            hideAllScreens();
+            questionSelection.classList.remove('hidden');
+            stationNumber.textContent = currentStation;
+            
+            // Generar 3 cartas para la estación actual
+            cardsContainer.innerHTML = '';
+            for (let i = 1; i <= 3; i++) {
+                const card = document.createElement('div');
+                card.className = 'card-option';
+                card.innerHTML = `
+                    <div class="card-inner">
+                        <div class="card-front">?</div>
+                        <div class="card-back">Pregunta ${i}</div>
+                    </div>
+                `;
+                card.addEventListener('click', () => selectQuestion(i));
+                cardsContainer.appendChild(card);
+            }
+        }
+
+        function selectQuestion(questionIndex) {
+            // Obtener pregunta aleatoria de la base de datos para esta estación
+            db.collection('questions')
+                .where('station', '==', currentStation)
+                .where('questionSet', '==', questionIndex)
+                .get()
+                .then(querySnapshot => {
+                    if (!querySnapshot.empty) {
+                        const questions = [];
+                        querySnapshot.forEach(doc => {
+                            questions.push({ id: doc.id, ...doc.data() });
+                        });
+                        
+                        // Seleccionar una pregunta aleatoria del conjunto
+                        const randomIndex = Math.floor(Math.random() * questions.length);
+                        currentQuestion = questions[randomIndex];
+                        showQuestionScreen();
+                    } else {
+                        alert('No hay preguntas disponibles para esta estación');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error cargando pregunta:', error);
+                    alert('Error al cargar la pregunta');
+                });
+        }
+
+        function showQuestionScreen() {
+            hideAllScreens();
+            questionScreen.classList.remove('hidden');
+            questionStation.textContent = currentStation;
+            
+            questionText.textContent = currentQuestion.text;
+            
+            // Mostrar opciones
+            optionsContainer.innerHTML = '';
+            currentQuestion.options.forEach((option, index) => {
+                const optionElement = document.createElement('div');
+                optionElement.className = 'option';
+                optionElement.textContent = option;
+                optionElement.addEventListener('click', () => selectOption(optionElement, index));
+                optionsContainer.appendChild(optionElement);
+            });
+            
+            selectedOption = null;
+        }
+
+        function selectOption(optionElement, index) {
+            // Deseleccionar opción anterior si existe
+            const previouslySelected = document.querySelector('.option.selected');
+            if (previouslySelected) {
+                previouslySelected.classList.remove('selected');
+            }
+            
+            // Seleccionar nueva opción
+            optionElement.classList.add('selected');
+            selectedOption = index;
+        }
+
+        function handleAnswerSubmission() {
+            if (selectedOption === null) {
+                alert('Por favor selecciona una opción');
+                return;
+            }
+            
+            // Guardar respuesta temporalmente
+            teamAnswers = {
+                station: currentStation,
+                questionId: currentQuestion.id,
+                selectedOption: selectedOption,
+                isCorrect: selectedOption === currentQuestion.correctAnswer,
+                timestamp: new Date()
+            };
+            
+            // Mostrar pantalla de registro de equipo
+            showTeamRegistration();
+        }
+
+        function showTeamRegistration() {
+            hideAllScreens();
+            teamRegistration.classList.remove('hidden');
+            teamNumberInput.value = '';
+            teamKeyInput.value = '';
+            registrationMessage.classList.add('hidden');
+        }
+
+        function handleTeamRegistration() {
+            const teamNumber = teamNumberInput.value;
+            const teamKey = teamKeyInput.value;
+            
+            if (!teamNumber || !teamKey) {
+                showRegistrationMessage('Por favor ingresa número y clave de equipo', 'error');
+                return;
+            }
+            
+            // Verificar credenciales del equipo
+            db.collection('teams').doc(teamNumber).get()
+                .then(doc => {
+                    if (doc.exists && doc.data().key === teamKey) {
+                        currentTeam = teamNumber;
+                        
+                        // Guardar respuesta en Firestore
+                        return db.collection('teams').doc(teamNumber).update({
+                            [`answers.${currentStation}`]: teamAnswers
+                        });
+                    } else {
+                        showRegistrationMessage('Número de equipo o clave incorrectos', 'error');
+                        throw new Error('Credenciales incorrectas');
+                    }
+                })
+                .then(() => {
+                    showConfirmationScreen();
+                })
+                .catch(error => {
+                    if (error.message !== 'Credenciales incorrectas') {
+                        console.error('Error guardando respuesta:', error);
+                        showRegistrationMessage('Error al guardar la respuesta', 'error');
+                    }
+                });
+        }
+
+        function showRegistrationMessage(message, type) {
+            registrationMessage.textContent = message;
+            registrationMessage.className = '';
+            registrationMessage.classList.add(type);
+            registrationMessage.classList.remove('hidden');
+        }
+
+        function showConfirmationScreen() {
+            hideAllScreens();
+            confirmationScreen.classList.remove('hidden');
+        }
+
+        function handleNextStation() {
+            // Regresar a la pantalla de bienvenida
+            hideAllScreens();
+            welcomeScreen.classList.remove('hidden');
+        }
+
+        function showAdminLogin() {
+            hideAllScreens();
+            adminLogin.classList.remove('hidden');
+        }
+
+        function handleAdminLogin() {
+            const password = adminPasswordInput.value;
+            
+            if (password === 'Tamarindo09') {
+                adminAuthenticated = true;
+                showAdminPanel();
+            } else {
+                adminLoginMessage.textContent = 'Contraseña incorrecta';
+                adminLoginMessage.className = 'error';
+                adminLoginMessage.classList.remove('hidden');
+            }
+        }
+
+        function backToWelcomeScreen() {
+            hideAllScreens();
+            welcomeScreen.classList.remove('hidden');
+        }
+
+        function showAdminPanel() {
+            if (!adminAuthenticated) {
+                showAdminLogin();
+                return;
+            }
+            
+            hideAllScreens();
+            adminPanel.classList.remove('hidden');
+        }
+
+        function logoutAdminPanel() {
+            adminAuthenticated = false;
+            hideAllScreens();
+            welcomeScreen.classList.remove('hidden');
+        }
+
+        function startGlobalTimer() {
+            startTime = new Date();
+            
+            // Actualizar tiempo en todos los equipos
+            db.collection('teams').get()
+                .then(querySnapshot => {
+                    const batch = db.batch();
+                    querySnapshot.forEach(doc => {
+                        const teamRef = db.collection('teams').doc(doc.id);
+                        batch.update(teamRef, {
+                            startTime: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    });
+                    return batch.commit();
+                })
+                .then(() => {
+                    alert('Cronómetro iniciado para todos los equipos');
+                })
+                .catch(error => {
+                    console.error('Error iniciando cronómetro:', error);
+                    alert('Error al iniciar el cronómetro');
+                });
+        }
+
+        function resetRallyData() {
+            if (confirm('¿Estás seguro de que quieres reiniciar todos los datos del rally? Esta acción no se puede deshacer.')) {
+                // Reiniciar todos los equipos
+                db.collection('teams').get()
+                    .then(querySnapshot => {
+                        const batch = db.batch();
+                        querySnapshot.forEach(doc => {
+                            const teamRef = db.collection('teams').doc(doc.id);
+                            batch.update(teamRef, {
+                                answers: {},
+                                startTime: null,
+                                finishTime: null,
+                                completed: false
+                            });
+                        });
+                        return batch.commit();
+                    })
+                    .then(() => {
+                        alert('Datos del rally reiniciados');
+                    })
+                    .catch(error => {
+                        console.error('Error reiniciando datos:', error);
+                        alert('Error al reiniciar los datos');
+                    });
+            }
+        }
+
+        function generateAllQRs() {
+            qrContainer.innerHTML = '';
+            
+            // Generar QR para cada estación
+            for (let i = 1; i <= 10; i++) {
+                const qrItem = document.createElement('div');
+                qrItem.className = 'qr-item';
+                
+                const qrTitle = document.createElement('h4');
+                qrTitle.textContent = `Estación ${i}`;
+                qrItem.appendChild(qrTitle);
+                
+                const qrCode = document.createElement('div');
+                qrCode.className = 'qr-code';
+                qrCode.id = `qr-station-${i}`;
+                qrItem.appendChild(qrCode);
+                
+                qrContainer.appendChild(qrItem);
+                
+                // Generar código QR
+                const url = `${window.location.origin}${window.location.pathname}?station=${i}`;
+                QRCode.toCanvas(document.getElementById(`qr-station-${i}`), url, {
+                    width: 150,
+                    height: 150,
+                    margin: 1
+                }, function(error) {
+                    if (error) console.error(error);
+                });
+            }
+        }
+
+        function showResults() {
+            db.collection('teams').get()
+                .then(querySnapshot => {
+                    const teams = [];
+                    querySnapshot.forEach(doc => {
+                        teams.push({ id: doc.id, ...doc.data() });
+                    });
+                    
+                    // Calcular puntuación y tiempo para cada equipo
+                    const results = teams.map(team => {
+                        let score = 0;
+                        let time = 'No completado';
+                        let stationsCompleted = 0;
+                        
+                        if (team.answers) {
+                            Object.values(team.answers).forEach(answer => {
+                                if (answer.isCorrect) score++;
+                                stationsCompleted++;
+                            });
+                        }
+                        
+                        if (team.startTime && team.finishTime) {
+                            const start = team.startTime.toDate();
+                            const finish = team.finishTime.toDate();
+                            const timeDiff = finish - start;
+                            const hours = Math.floor(timeDiff / 3600000);
+                            const minutes = Math.floor((timeDiff % 3600000) / 60000);
+                            const seconds = Math.floor((timeDiff % 60000) / 1000);
+                            time = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                        }
+                        
+                        return {
+                            team: team.id,
+                            score: score,
+                            time: time,
+                            stationsCompleted: stationsCompleted
+                        };
+                    });
+                    
+                    // Ordenar por puntuación (descendente) y tiempo (ascendente)
+                    results.sort((a, b) => {
+                        if (a.score !== b.score) {
+                            return b.score - a.score;
+                        } else {
+                            // Si el tiempo es "No completado", va al final
+                            if (a.time === 'No completado') return 1;
+                            if (b.time === 'No completado') return -1;
+                            
+                            // Comparar tiempos (menor tiempo es mejor)
+                            return a.time.localeCompare(b.time);
+                        }
+                    });
+                    
+                    // Mostrar resultados en la tabla
+                    const tbody = resultsTable.querySelector('tbody');
+                    tbody.innerHTML = '';
+                    
+                    results.forEach(result => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${result.team}</td>
+                            <td>${result.score}</td>
+                            <td>${result.time}</td>
+                            <td>${result.stationsCompleted}/10</td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    
+                    resultsTable.classList.remove('hidden');
+                })
+                .catch(error => {
+                    console.error('Error cargando resultados:', error);
+                    alert('Error al cargar los resultados');
+                });
+        }
+
+        function hideAllScreens() {
+            const screens = [
+                welcomeScreen,
+                questionSelection,
+                questionScreen,
+                teamRegistration,
+                confirmationScreen,
+                adminLogin,
+                adminPanel
+            ];
+            
+            screens.forEach(screen => {
+                screen.classList.add('hidden');
+            });
+        }
+    </script>
+</body>
+</html>
