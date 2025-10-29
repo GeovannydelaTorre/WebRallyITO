@@ -381,6 +381,23 @@
             </div>
             
             <div class="admin-panel">
+                <h3>Simulación de Estaciones</h3>
+                <p>Prueba las estaciones como administrador:</p>
+                <div class="simulation-buttons">
+                    <button onclick="simulateStation(1)" class="btn">Estación 1</button>
+                    <button onclick="simulateStation(2)" class="btn">Estación 2</button>
+                    <button onclick="simulateStation(3)" class="btn">Estación 3</button>
+                    <button onclick="simulateStation(4)" class="btn">Estación 4</button>
+                    <button onclick="simulateStation(5)" class="btn">Estación 5</button>
+                    <button onclick="simulateStation(6)" class="btn">Estación 6</button>
+                    <button onclick="simulateStation(7)" class="btn">Estación 7</button>
+                    <button onclick="simulateStation(8)" class="btn">Estación 8</button>
+                    <button onclick="simulateStation(9)" class="btn">Estación 9</button>
+                    <button onclick="simulateStation(10)" class="btn">Estación 10</button>
+                </div>
+            </div>
+            
+            <div class="admin-panel">
                 <h3>Generador de Códigos QR</h3>
                 <p>Genera los códigos QR para cada estación:</p>
                 <div class="qr-container" id="qr-container">
@@ -414,14 +431,14 @@
     </div>
 
     <script>
-        // Configuración de Firebase (REMPLAZA CON TU CONFIGURACIÓN)
+        // Configuración de Firebase
         const firebaseConfig = {
-           apiKey: "AIzaSyD9ZkSYVakAuPWIAfgDB3EAqpgUJkrkPRo",
-          authDomain: "webrallyito.firebaseapp.com",
-          projectId: "webrallyito",
-          storageBucket: "webrallyito.firebasestorage.app",
-          messagingSenderId: "469749169879",
-          appId: "1:469749169879:web:9c7f367089b5dacdebfa92"
+            apiKey: "AIzaSyD9ZkSYVakAuPWIAfgDB3EAqpgUJkrkPRo",
+            authDomain: "webrallyito.firebaseapp.com",
+            projectId: "webrallyito",
+            storageBucket: "webrallyito.firebasestorage.app",
+            messagingSenderId: "469749169879",
+            appId: "1:469749169879:web:9c7f367089b5dacdebfa92"
         };
 
         // Inicializar Firebase
@@ -437,6 +454,7 @@
         let timerInterval = null;
         let teamAnswers = {};
         let adminAuthenticated = false;
+        let isAdminSimulation = false;
 
         // Referencias a elementos DOM
         const welcomeScreen = document.getElementById('welcome-screen');
@@ -521,11 +539,11 @@
             }
         }
 
-        function selectQuestion(questionIndex) {
+        function selectQuestion(questionSet) {
             // Obtener pregunta aleatoria de la base de datos para esta estación
             db.collection('questions')
                 .where('station', '==', currentStation)
-                .where('questionSet', '==', questionIndex)
+                .where('questionSet', '==', questionSet)
                 .get()
                 .then(querySnapshot => {
                     if (!querySnapshot.empty) {
@@ -539,15 +557,13 @@
                         currentQuestion = questions[randomIndex];
                         showQuestionScreen();
                     } else {
-                        alert('No hay preguntas disponibles para esta estación');
-                        
+                        alert('No hay preguntas disponibles para esta estación. Por favor, contacta al administrador.');
                     }
                 })
                 .catch(error => {
                     console.error('Error cargando pregunta:', error);
-                    alert('Error al cargar la pregunta funtion selectQuestion '+typeof questionIndex);
+                    alert('Error al cargar la pregunta. Verifica tu conexión a internet.');
                 });
-            
         }
 
         function showQuestionScreen() {
@@ -559,16 +575,22 @@
             
             // Mostrar opciones
             optionsContainer.innerHTML = '';
-            currentQuestion.options.forEach((option, index) => {
-                const optionElement = document.createElement('div');
-                optionElement.className = 'option';
-                optionElement.textContent = option;
-                optionElement.addEventListener('click', () => selectOption(optionElement, index));
-                optionsContainer.appendChild(optionElement);
-            });
+            if (currentQuestion.options && Array.isArray(currentQuestion.options)) {
+                currentQuestion.options.forEach((option, index) => {
+                    const optionElement = document.createElement('div');
+                    optionElement.className = 'option';
+                    optionElement.textContent = option;
+                    optionElement.addEventListener('click', () => selectOption(optionElement, index));
+                    optionsContainer.appendChild(optionElement);
+                });
+            } else {
+                console.error('Las opciones de la pregunta no están definidas correctamente:', currentQuestion);
+                alert('Error: La pregunta no tiene opciones definidas.');
+                showQuestionSelection();
+                return;
+            }
             
             selectedOption = null;
-            
         }
 
         function selectOption(optionElement, index) {
@@ -589,13 +611,25 @@
                 return;
             }
             
-            // Guardar respuesta temporalmente
+            // Verificar si es simulación de administrador
+            if (isAdminSimulation) {
+                const isCorrect = selectedOption === currentQuestion.correctAnswer;
+                alert(`Simulación de Administrador\n\nTu respuesta: Opción ${selectedOption + 1}\nRespuesta correcta: Opción ${currentQuestion.correctAnswer + 1}\n\nResultado: ${isCorrect ? '✓ CORRECTO' : '✗ INCORRECTO'}`);
+                
+                // Regresar al panel de administración
+                isAdminSimulation = false;
+                showAdminPanel();
+                return;
+            }
+            
+            // Guardar respuesta temporalmente para estudiantes
             teamAnswers = {
                 station: currentStation,
                 questionId: currentQuestion.id,
                 selectedOption: selectedOption,
                 isCorrect: selectedOption === currentQuestion.correctAnswer,
-                timestamp: new Date()
+                timestamp: new Date(),
+                punishment: selectedOption !== currentQuestion.correctAnswer ? currentQuestion.punishment : null
             };
             
             // Mostrar pantalla de registro de equipo
@@ -622,23 +656,30 @@
             // Verificar credenciales del equipo
             db.collection('teams').doc(teamNumber).get()
                 .then(doc => {
-                    if (doc.exists && doc.data().key === teamKey) {
-                        currentTeam = teamNumber;
-                        
-                        // Guardar respuesta en Firestore
-                        return db.collection('teams').doc(teamNumber).update({
-                            [`answers.${currentStation}`]: teamAnswers
-                        });
+                    if (doc.exists) {
+                        const teamData = doc.data();
+                        // Verificar si la clave coincide
+                        if (teamData.key === teamKey) {
+                            currentTeam = teamNumber;
+                            
+                            // Guardar respuesta en Firestore
+                            return db.collection('teams').doc(teamNumber).update({
+                                [`answers.${currentStation}`]: teamAnswers
+                            });
+                        } else {
+                            showRegistrationMessage('Clave de equipo incorrecta', 'error');
+                            throw new Error('Credenciales incorrectas');
+                        }
                     } else {
-                        showRegistrationMessage('Número de equipo o clave incorrectos', 'error');
-                        throw new Error('Credenciales incorrectas');
+                        showRegistrationMessage('Número de equipo no encontrado', 'error');
+                        throw new Error('Equipo no encontrado');
                     }
                 })
                 .then(() => {
                     showConfirmationScreen();
                 })
                 .catch(error => {
-                    if (error.message !== 'Credenciales incorrectas') {
+                    if (error.message !== 'Credenciales incorrectas' && error.message !== 'Equipo no encontrado') {
                         console.error('Error guardando respuesta:', error);
                         showRegistrationMessage('Error al guardar la respuesta', 'error');
                     }
@@ -648,7 +689,9 @@
         function showRegistrationMessage(message, type) {
             registrationMessage.textContent = message;
             registrationMessage.className = '';
-            registrationMessage.classList.add(type);
+            registrationMessage.style.backgroundColor = type === 'error' ? '#ffebee' : '#e8f5e8';
+            registrationMessage.style.color = type === 'error' ? '#c62828' : '#2e7d32';
+            registrationMessage.style.border = type === 'error' ? '1px solid #f44336' : '1px solid #4caf50';
             registrationMessage.classList.remove('hidden');
         }
 
@@ -676,7 +719,9 @@
                 showAdminPanel();
             } else {
                 adminLoginMessage.textContent = 'Contraseña incorrecta';
-                adminLoginMessage.className = 'error';
+                adminLoginMessage.style.backgroundColor = '#ffebee';
+                adminLoginMessage.style.color = '#c62828';
+                adminLoginMessage.style.border = '1px solid #f44336';
                 adminLoginMessage.classList.remove('hidden');
             }
         }
@@ -751,6 +796,13 @@
                         alert('Error al reiniciar los datos');
                     });
             }
+        }
+
+        // Función para simulación de estaciones por administrador
+        function simulateStation(stationNumber) {
+            currentStation = stationNumber;
+            isAdminSimulation = true;
+            showQuestionSelection();
         }
 
         function generateAllQRs() {
