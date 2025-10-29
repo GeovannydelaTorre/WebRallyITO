@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/8019/8019859.png">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2864/2864304.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rally Académico</title>
@@ -540,48 +540,53 @@
             }
         }
 
-        function selectQuestion(questionSet) {
-    console.log(`Seleccionando pregunta para estación ${currentStation}, set ${questionSet}`);
+  function selectQuestion(questionSet) {
+    console.log(`🎯 Cargando todas las preguntas para filtrar localmente...`);
     
-    // Obtener pregunta de la base de datos para esta estación y set
-    db.collection('questions')
-        .where('station', '==', currentStation)
-        .where('questioned', '==', questionSet) // Cambiado de 'questionSet' a 'questioned'
-        .get()
+    // Cargar TODAS las preguntas y filtrar
+    db.collection('questions').get()
         .then(querySnapshot => {
-            if (!querySnapshot.empty) {
-                const questions = [];
-                querySnapshot.forEach(doc => {
-                    const questionData = doc.data();
-                    // Validar que la pregunta tenga la estructura correcta
-                    if (questionData.text && questionData.options && Array.isArray(questionData.options)) {
-                        questions.push({ 
-                            id: doc.id, 
-                            ...questionData 
-                        });
-                    } else {
-                        console.warn('Pregunta con estructura inválida:', doc.id, questionData);
-                    }
-                });
+            const todasLasPreguntas = [];
+            
+            querySnapshot.forEach(doc => {
+                const data = doc.data();
+                todasLasPreguntas.push({ id: doc.id, ...data });
+            });
+            
+            console.log(`📚 Total de preguntas cargadas: ${todasLasPreguntas.length}`);
+            
+            // Filtrar localmente
+            const preguntasFiltradas = todasLasPreguntas.filter(pregunta => {
+                // Intentar diferentes comparaciones
+                const stationMatch = 
+                    pregunta.station == currentStation || 
+                    pregunta.station === currentStation ||
+                    String(pregunta.station) === String(currentStation);
+                    
+                const questionedMatch = 
+                    pregunta.questioned == questionSet || 
+                    pregunta.questioned === questionSet ||
+                    String(pregunta.questioned) === String(questionSet);
                 
-                if (questions.length > 0) {
-                    // Seleccionar una pregunta aleatoria del conjunto
-                    const randomIndex = Math.floor(Math.random() * questions.length);
-                    currentQuestion = questions[randomIndex];
-                    console.log('Pregunta cargada:', currentQuestion);
-                    showQuestionScreen();
-                } else {
-                    alert('No hay preguntas válidas para esta estación. Por favor, contacta al administrador.');
-                    showQuestionSelection(); // Volver a la selección
-                }
+                return stationMatch && questionedMatch;
+            });
+            
+            console.log(`🎯 Preguntas filtradas: ${preguntasFiltradas.length}`);
+            
+            if (preguntasFiltradas.length > 0) {
+                const randomIndex = Math.floor(Math.random() * preguntasFiltradas.length);
+                currentQuestion = preguntasFiltradas[randomIndex];
+                console.log('✅ Pregunta seleccionada:', currentQuestion);
+                showQuestionScreen();
             } else {
-                console.warn(`No se encontraron preguntas para estación ${currentStation}, set ${questionSet}`);
-                alert(`No hay preguntas disponibles para la estación ${currentStation}. Por favor, contacta al administrador.`);
+                console.error('❌ No hay preguntas después del filtrado');
+                console.log('Todas las preguntas:', todasLasPreguntas);
+                alert(`No hay preguntas para la estación ${currentStation}, set ${questionSet}. Verifica los datos.`);
             }
         })
         .catch(error => {
-            console.error('Error cargando pregunta:', error);
-            alert('Error de conexión al cargar la pregunta. Verifica tu conexión a internet.');
+            console.error('Error cargando preguntas:', error);
+            alert('Error de conexión al cargar las preguntas.');
         });
 }
 
