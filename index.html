@@ -540,58 +540,84 @@
         }
 
         function selectQuestion(questionSet) {
-            // Obtener pregunta aleatoria de la base de datos para esta estación
-            db.collection('questions')
-                .where('station', '==', currentStation)
-                .where('questionSet', '==', questionSet)
-                .get()
-                .then(querySnapshot => {
-                    if (!querySnapshot.empty) {
-                        const questions = [];
-                        querySnapshot.forEach(doc => {
-                            questions.push({ id: doc.id, ...doc.data() });
+    console.log(`Seleccionando pregunta para estación ${currentStation}, set ${questionSet}`);
+    
+    // Obtener pregunta de la base de datos para esta estación y set
+    db.collection('questions')
+        .where('station', '==', currentStation)
+        .where('questioned', '==', questionSet) // Cambiado de 'questionSet' a 'questioned'
+        .get()
+        .then(querySnapshot => {
+            if (!querySnapshot.empty) {
+                const questions = [];
+                querySnapshot.forEach(doc => {
+                    const questionData = doc.data();
+                    // Validar que la pregunta tenga la estructura correcta
+                    if (questionData.text && questionData.options && Array.isArray(questionData.options)) {
+                        questions.push({ 
+                            id: doc.id, 
+                            ...questionData 
                         });
-                        
-                        // Seleccionar una pregunta aleatoria del conjunto
-                        const randomIndex = Math.floor(Math.random() * questions.length);
-                        currentQuestion = questions[randomIndex];
-                        showQuestionScreen();
                     } else {
-                        alert('No hay preguntas disponibles para esta estación. Por favor, contacta al administrador.');
+                        console.warn('Pregunta con estructura inválida:', doc.id, questionData);
                     }
-                })
-                .catch(error => {
-                    console.error('Error cargando pregunta:', error);
-                    alert('Error al cargar la pregunta. Verifica tu conexión a internet.');
                 });
-        }
+                
+                if (questions.length > 0) {
+                    // Seleccionar una pregunta aleatoria del conjunto
+                    const randomIndex = Math.floor(Math.random() * questions.length);
+                    currentQuestion = questions[randomIndex];
+                    console.log('Pregunta cargada:', currentQuestion);
+                    showQuestionScreen();
+                } else {
+                    alert('No hay preguntas válidas para esta estación. Por favor, contacta al administrador.');
+                    showQuestionSelection(); // Volver a la selección
+                }
+            } else {
+                console.warn(`No se encontraron preguntas para estación ${currentStation}, set ${questionSet}`);
+                alert(`No hay preguntas disponibles para la estación ${currentStation}. Por favor, contacta al administrador.`);
+            }
+        })
+        .catch(error => {
+            console.error('Error cargando pregunta:', error);
+            alert('Error de conexión al cargar la pregunta. Verifica tu conexión a internet.');
+        });
+}
 
         function showQuestionScreen() {
-            hideAllScreens();
-            questionScreen.classList.remove('hidden');
-            questionStation.textContent = currentStation;
-            
-            questionText.textContent = currentQuestion.text;
-            
-            // Mostrar opciones
-            optionsContainer.innerHTML = '';
-            if (currentQuestion.options && Array.isArray(currentQuestion.options)) {
-                currentQuestion.options.forEach((option, index) => {
-                    const optionElement = document.createElement('div');
-                    optionElement.className = 'option';
-                    optionElement.textContent = option;
-                    optionElement.addEventListener('click', () => selectOption(optionElement, index));
-                    optionsContainer.appendChild(optionElement);
-                });
-            } else {
-                console.error('Las opciones de la pregunta no están definidas correctamente:', currentQuestion);
-                alert('Error: La pregunta no tiene opciones definidas.');
-                showQuestionSelection();
-                return;
-            }
-            
-            selectedOption = null;
-        }
+    hideAllScreens();
+    questionScreen.classList.remove('hidden');
+    questionStation.textContent = currentStation;
+    
+    // Validar que currentQuestion existe y tiene los campos necesarios
+    if (!currentQuestion || !currentQuestion.text) {
+        alert('Error: La pregunta no se cargó correctamente.');
+        showQuestionSelection();
+        return;
+    }
+    
+    questionText.textContent = currentQuestion.text;
+    
+    // Mostrar opciones con validación
+    optionsContainer.innerHTML = '';
+    
+    if (currentQuestion.options && Array.isArray(currentQuestion.options) && currentQuestion.options.length >= 4) {
+        currentQuestion.options.forEach((option, index) => {
+            const optionElement = document.createElement('div');
+            optionElement.className = 'option';
+            optionElement.textContent = option || `Opción ${index + 1}`;
+            optionElement.addEventListener('click', () => selectOption(optionElement, index));
+            optionsContainer.appendChild(optionElement);
+        });
+    } else {
+        console.error('Las opciones de la pregunta no están definidas correctamente:', currentQuestion);
+        alert('Error: La pregunta no tiene opciones válidas.');
+        showQuestionSelection();
+        return;
+    }
+    
+    selectedOption = null;
+}
 
         function selectOption(optionElement, index) {
             // Deseleccionar opción anterior si existe
