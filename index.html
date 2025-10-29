@@ -540,7 +540,7 @@
             }
         }
 
-  function selectQuestion(questionSet) {
+function selectQuestion(questionSet) {
     console.log(`🎯 Cargando todas las preguntas para filtrar localmente...`);
     
     // Cargar TODAS las preguntas y filtrar
@@ -555,20 +555,35 @@
             
             console.log(`📚 Total de preguntas cargadas: ${todasLasPreguntas.length}`);
             
-            // Filtrar localmente
+            // Filtrar localmente - CORREGIDO PARA MANEJAR AMBOS CAMPOS
             const preguntasFiltradas = todasLasPreguntas.filter(pregunta => {
-                // Intentar diferentes comparaciones
+                // Comparar estación (múltiples formatos)
                 const stationMatch = 
                     pregunta.station == currentStation || 
                     pregunta.station === currentStation ||
                     String(pregunta.station) === String(currentStation);
-                    
-                const questionedMatch = 
-                    pregunta.questioned == questionSet || 
-                    pregunta.questioned === questionSet ||
-                    String(pregunta.questioned) === String(questionSet);
                 
-                return stationMatch && questionedMatch;
+                // IMPORTANTE: Verificar AMBOS campos - questionSet Y questioned
+                const tieneQuestionSet = pregunta.questionSet !== undefined;
+                const tieneQuestioned = pregunta.questioned !== undefined;
+                
+                let setMatch = false;
+                
+                if (tieneQuestionSet) {
+                    setMatch = 
+                        pregunta.questionSet == questionSet || 
+                        pregunta.questionSet === questionSet ||
+                        String(pregunta.questionSet) === String(questionSet);
+                }
+                
+                if (!setMatch && tieneQuestioned) {
+                    setMatch = 
+                        pregunta.questioned == questionSet || 
+                        pregunta.questioned === questionSet ||
+                        String(pregunta.questioned) === String(questionSet);
+                }
+                
+                return stationMatch && setMatch;
             });
             
             console.log(`🎯 Preguntas filtradas: ${preguntasFiltradas.length}`);
@@ -580,8 +595,19 @@
                 showQuestionScreen();
             } else {
                 console.error('❌ No hay preguntas después del filtrado');
-                console.log('Todas las preguntas:', todasLasPreguntas);
-                alert(`No hay preguntas para la estación ${currentStation}, set ${questionSet}. Verifica los datos.`);
+                // Mostrar diagnóstico detallado
+                console.log('🔍 Diagnóstico detallado:');
+                const preguntasEstacion = todasLasPreguntas.filter(p => 
+                    p.station == currentStation || 
+                    p.station === currentStation ||
+                    String(p.station) === String(currentStation)
+                );
+                console.log(`Preguntas en estación ${currentStation}:`, preguntasEstacion.length);
+                preguntasEstacion.forEach(p => {
+                    console.log(`- ID: ${p.id}, questionSet: ${p.questionSet}, questioned: ${p.questioned}`);
+                });
+                
+                alert(`No hay preguntas para la estación ${currentStation}, set ${questionSet}. Contacta al administrador.`);
             }
         })
         .catch(error => {
